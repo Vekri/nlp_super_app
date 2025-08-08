@@ -3,3 +3,6 @@ transformers
 langdetect
 torch
 sentencepiece
+deep-translator
+translator
+yake

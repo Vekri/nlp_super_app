@@ -7,9 +7,12 @@ scikit-learn
 statsmodels
 joblib
 transformers
+sentence-transformers
 langdetect
 torch
 sentencepiece
 protobuf
 typing-extensions
 accelerate
+yake
+textblob

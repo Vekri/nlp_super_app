@@ -3,3 +3,4 @@ transformers
 langdetect
 torch
 sentencepiece
+os

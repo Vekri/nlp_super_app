@@ -1,9 +1,5 @@
 streamlit
 transformers
-sentence-transformers
 langdetect
 torch
 sentencepiece
-accelerate
-yake
-textblob

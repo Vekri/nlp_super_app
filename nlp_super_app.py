@@ -1,13 +1,25 @@
 import streamlit as st
 from transformers import pipeline
 from langdetect import detect
-import os
 
+# --------------------
+# Page Setup
+# --------------------
 st.set_page_config(page_title="🧠 All-in-One NLP App", layout="wide")
 st.title("🧠 Natural Language Processing Toolkit")
 
+# --------------------
+# Cache Pipelines
+# --------------------
+@st.cache_resource
+def get_pipeline(task, model=None):
+    """Load and cache a transformers pipeline."""
+    return pipeline(task, model=model) if model else pipeline(task)
+
+# --------------------
 # Task Selector
-task = st.selectbox("Choose an NLP Task", [
+# --------------------
+tasks = [
     "Sentiment Analysis",
     "Text Summarization",
     "Named Entity Recognition (NER)",
@@ -18,36 +30,47 @@ task = st.selectbox("Choose an NLP Task", [
     "Language Detection",
     "Keyword Extraction",
     "Chat with a Document (RAG-based)"
-])
+]
+task = st.selectbox("Choose an NLP Task", tasks)
 
-# Input text for all tasks (except QA and RAG)
+# --------------------
+# Input Handling
+# --------------------
 if task not in ["Question Answering", "Chat with a Document (RAG-based)"]:
     text = st.text_area("Enter your text", height=200)
 
-# Sentiment Analysis
+# --------------------
+# Task Logic
+# --------------------
 if task == "Sentiment Analysis":
     if st.button("Analyze Sentiment"):
-        analyzer = pipeline("sentiment-analysis")
-        result = analyzer(text)[0]
-        st.write(f"**Label**: {result['label']}, **Score**: {round(result['score'], 2)}")
+        if text.strip():
+            analyzer = get_pipeline("sentiment-analysis")
+            result = analyzer(text)[0]
+            st.success(f"**Label**: {result['label']}, **Score**: {round(result['score'], 2)}")
+        else:
+            st.warning("Please enter text to analyze.")
 
-# Text Summarization
 elif task == "Text Summarization":
     if st.button("Summarize"):
-        summarizer = pipeline("summarization")
-        summary = summarizer(text, max_length=100, min_length=30, do_sample=False)[0]['summary_text']
-        st.write("**Summary:**")
-        st.write(summary)
+        if text.strip():
+            summarizer = get_pipeline("summarization")
+            summary = summarizer(text, max_length=100, min_length=30, do_sample=False)[0]['summary_text']
+            st.write("**Summary:**")
+            st.info(summary)
+        else:
+            st.warning("Please enter text to summarize.")
 
-# Named Entity Recognition (NER)
 elif task == "Named Entity Recognition (NER)":
     if st.button("Extract Entities"):
-        ner = pipeline("ner", grouped_entities=True)
-        entities = ner(text)
-        for ent in entities:
-            st.write(f"**{ent['entity_group']}**: {ent['word']} ({round(ent['score'], 2)})")
+        if text.strip():
+            ner = get_pipeline("ner", grouped_entities=True)
+            entities = ner(text)
+            for ent in entities:
+                st.write(f"**{ent['entity_group']}**: {ent['word']} ({round(ent['score'], 2)})")
+        else:
+            st.warning("Please enter text for entity extraction.")
 
-# Translation (Multilingual)
 elif task == "Translation (Multilingual)":
     st.markdown("### 🌍 Multilingual Translation")
     lang_pairs = {
@@ -62,62 +85,77 @@ elif task == "Translation (Multilingual)":
     }
     selected_pair = st.selectbox("Choose language pair", list(lang_pairs.keys()))
     if st.button("Translate"):
-        translator = pipeline("translation", model=lang_pairs[selected_pair])
-        result = translator(text)[0]['translation_text']
-        st.write("**Translated Text:**")
-        st.write(result)
+        if text.strip():
+            translator = get_pipeline("translation", model=lang_pairs[selected_pair])
+            result = translator(text)[0]['translation_text']
+            st.write("**Translated Text:**")
+            st.success(result)
+        else:
+            st.warning("Please enter text to translate.")
 
-# Question Answering
 elif task == "Question Answering":
     context = st.text_area("Enter context (paragraph)", height=150)
     question = st.text_input("Enter your question")
     if st.button("Answer"):
-        qa = pipeline("question-answering")
-        answer = qa(question=question, context=context)['answer']
-        st.write("**Answer:**")
-        st.write(answer)
+        if context.strip() and question.strip():
+            qa = get_pipeline("question-answering")
+            answer = qa(question=question, context=context)['answer']
+            st.success(f"**Answer:** {answer}")
+        else:
+            st.warning("Please provide both context and question.")
 
-# Grammar Correction (Using text2text-generation)
 elif task == "Grammar Correction":
     if st.button("Correct Grammar"):
-        corrector = pipeline("text2text-generation", model="prithivida/grammar_error_correcter_v1")
-        result = corrector(text)[0]['generated_text']
-        st.write("**Corrected Text:**")
-        st.write(result)
+        if text.strip():
+            corrector = get_pipeline("text2text-generation", model="prithivida/grammar_error_correcter_v1")
+            result = corrector(text)[0]['generated_text']
+            st.write("**Corrected Text:**")
+            st.success(result)
+        else:
+            st.warning("Please enter text for grammar correction.")
 
-# Text Classification
 elif task == "Text Classification":
     if st.button("Classify Text"):
-        classifier = pipeline("text-classification")
-        result = classifier(text)[0]
-        st.write(f"**Label**: {result['label']} with score {round(result['score'], 2)}")
+        if text.strip():
+            classifier = get_pipeline("text-classification")
+            result = classifier(text)[0]
+            st.success(f"**Label**: {result['label']} with score {round(result['score'], 2)}")
+        else:
+            st.warning("Please enter text for classification.")
 
-# Language Detection
 elif task == "Language Detection":
     if st.button("Detect Language"):
-        language = detect(text)
-        st.write(f"**Detected Language**: {language}")
+        if text.strip():
+            language = detect(text)
+            st.success(f"**Detected Language**: {language}")
+        else:
+            st.warning("Please enter text to detect language.")
 
-# Keyword Extraction (basic using NER)
 elif task == "Keyword Extraction":
     if st.button("Extract Keywords"):
-        ner = pipeline("ner", grouped_entities=True)
-        keywords = [ent['word'] for ent in ner(text)]
-        st.write("**Keywords:**")
-        st.write(list(set(keywords)))
+        if text.strip():
+            ner = get_pipeline("ner", grouped_entities=True)
+            keywords = [ent['word'] for ent in ner(text)]
+            st.write("**Keywords:**")
+            st.info(list(set(keywords)))
+        else:
+            st.warning("Please enter text to extract keywords.")
 
-# Chat with a Document (RAG-based simulation)
 elif task == "Chat with a Document (RAG-based)":
-    st.markdown("This requires vector DB and advanced setup. Simulated here.")
+    st.markdown("This is a simulated RAG-based system.")
     doc = st.text_area("Paste document content")
     query = st.text_input("Ask a question about the document")
     if st.button("Get Answer"):
-        qa = pipeline("question-answering")
-        answer = qa(question=query, context=doc)['answer']
-        st.write("**Answer:**")
-        st.write(answer)
+        if doc.strip() and query.strip():
+            qa = get_pipeline("question-answering")
+            answer = qa(question=query, context=doc)['answer']
+            st.success(f"**Answer:** {answer}")
+        else:
+            st.warning("Please provide both document and question.")
 
-# Examples for testing
+# --------------------
+# Example Inputs
+# --------------------
 with st.expander("🔍 Example Inputs"):
     st.markdown("""
     - **Sentiment:** I love using Streamlit with transformers!

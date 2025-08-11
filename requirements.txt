@@ -1,12 +1,5 @@
 streamlit
-pip>=24.0
-setuptools>=68.0
-wheel
-cmake
 transformers
-langdetect
 torch
+langdetect
 sentencepiece
-deep-translator
-translator
-yake
